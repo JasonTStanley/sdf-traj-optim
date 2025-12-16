@@ -3,10 +3,11 @@ from abc import ABC, abstractmethod
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
-from attrs import define
+from attrs import define, field
 from matplotlib.axes import Axes
 
 
+@define
 class Obstacle(ABC):
     @abstractmethod
     def check_sdf(self, pos: np.ndarray) -> float:
@@ -26,14 +27,24 @@ class Obstacle(ABC):
     def plot(self, ax: Axes):
         """Visualize to a matplotlib plot"""
         pass
+    @abstractmethod
+    def set_observed(self):
+        """Set if the SDF should see this obstacle"""
+        pass
+    @abstractmethod
+    def is_observed(self):
+        """True if the SDF should see this obstacle"""
+        pass
 
 
 @define
 class Circle(Obstacle):
     center: np.ndarray
     radius: float
-
+    observed: bool = field(default=True)
     def check_sdf(self, pos: np.ndarray) -> float:
+        if not self.observed:
+            return np.inf
         return float(np.linalg.norm(pos - self.center) - self.radius)
 
     def sdf_deriv(self, pos: np.ndarray) -> np.ndarray:
@@ -49,13 +60,20 @@ class Circle(Obstacle):
         )
         ax.add_artist(circle)
 
+    def set_observed(self, obs: bool):
+        self.observed = obs
+    def is_observed(self):
+        return self.observed
 
 @define
 class Rectangle(Obstacle):
     center: np.ndarray
     half_extents: np.ndarray
+    observed: bool = field(default=True)
 
     def check_sdf(self, pos: np.ndarray) -> float:
+        if not self.observed:
+            return np.inf
         d = np.abs(pos - self.center) - self.half_extents
         return np.linalg.norm(np.maximum(d, 0)) + min(max(d[0], d[1]), 0)
 
@@ -78,13 +96,21 @@ class Rectangle(Obstacle):
         )
         ax.add_artist(rect)
 
+    def set_observed(self, obs: bool):
+        self.observed = obs
+    def is_observed(self):
+        return self.is_observed
+
 
 @define
 class Oval(Obstacle):
     center: np.ndarray
     radii: np.ndarray
+    observed: bool = field(default=True)
 
     def check_sdf(self, pos: np.ndarray) -> float:
+        if not self.observed:
+            return np.inf
         q = (pos - self.center) / self.radii
         return float(np.linalg.norm(q) - 1)
 
@@ -106,3 +132,8 @@ class Oval(Obstacle):
             linewidth=2,
         )
         ax.add_artist(ellipse)
+
+    def set_observed(self, obs: bool):
+        self.observed = obs
+    def is_observed(self):
+        return self.observed

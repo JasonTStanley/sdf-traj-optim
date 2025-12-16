@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from circles import Circle
-from linear_bubble_cover import LinearBubbleCover
-from overlap import get_overlaps_graph
-from points_sampler import get_uniform_random_points
+from .circles import Circle
+from .linear_bubble_cover import LinearBubbleCover
+from .overlap import get_overlaps_graph
+from .points_sampler import get_uniform_random_points
 
 
 class SDF:
