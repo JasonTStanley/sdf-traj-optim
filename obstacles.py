@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
+
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
 import numpy as np
 from attrs import define
-import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+
+
 class Obstacle(ABC):
     @abstractmethod
     def check_sdf(self, pos: np.ndarray) -> float:
@@ -11,9 +16,17 @@ class Obstacle(ABC):
         pass
 
     @abstractmethod
-    def plot(self, ax: plt.Axes):
+    def sdf_deriv(self, pos: np.ndarray) -> np.ndarray:
+        """
+        Calculate the derivative of the SDF value wrt. a given position.
+        """
+        pass
+
+    @abstractmethod
+    def plot(self, ax: Axes):
         """Visualize to a matplotlib plot"""
         pass
+
 
 @define
 class Circle(Obstacle):
@@ -21,10 +34,19 @@ class Circle(Obstacle):
     radius: float
 
     def check_sdf(self, pos: np.ndarray) -> float:
-        return np.linalg.norm(pos - self.center) - self.radius
+        return float(np.linalg.norm(pos - self.center) - self.radius)
 
-    def plot(self, ax: plt.Axes):
-        circle = plt.Circle(self.center, self.radius, color='red', fill=False, linewidth=2)
+    def sdf_deriv(self, pos: np.ndarray) -> np.ndarray:
+        direction = pos - self.center
+        norm = np.linalg.norm(direction)
+        if norm == 0:
+            return np.zeros_like(direction)
+        return direction / norm
+
+    def plot(self, ax: Axes):
+        circle = patches.Circle(
+            self.center, self.radius, color="red", fill=False, linewidth=2
+        )
         ax.add_artist(circle)
 
 
@@ -37,11 +59,26 @@ class Rectangle(Obstacle):
         d = np.abs(pos - self.center) - self.half_extents
         return np.linalg.norm(np.maximum(d, 0)) + min(max(d[0], d[1]), 0)
 
-    def plot(self, ax: plt.Axes):
+    def sdf_deriv(self, pos: np.ndarray) -> np.ndarray:
+        d = pos - self.center
+        clamped = np.maximum(np.abs(d) - self.half_extents, 0)
+        norm = np.linalg.norm(clamped)
+        if norm == 0:
+            return np.zeros_like(d)
+        sign = np.sign(d)
+        deriv = clamped / norm
+        deriv *= sign
+        return deriv
+
+    def plot(self, ax: Axes):
         lower_left = self.center - self.half_extents
         width, height = 2 * self.half_extents
-        rect = plt.Rectangle(lower_left, width, height, color='red', fill=False, linewidth=2)
+        rect = patches.Rectangle(
+            lower_left, width, height, color="red", fill=False, linewidth=2
+        )
         ax.add_artist(rect)
+
+
 @define
 class Oval(Obstacle):
     center: np.ndarray
@@ -49,8 +86,23 @@ class Oval(Obstacle):
 
     def check_sdf(self, pos: np.ndarray) -> float:
         q = (pos - self.center) / self.radii
-        return np.linalg.norm(q) - 1
+        return float(np.linalg.norm(q) - 1)
 
-    def plot(self, ax: plt.Axes):
-        ellipse = plt.Ellipse(self.center, 2 * self.radii[0], 2 * self.radii[1], color='green', fill=False, linewidth=2)
+    def sdf_deriv(self, pos: np.ndarray) -> np.ndarray:
+        return (
+            2
+            * (pos - self.center)
+            / (self.radii**2)
+            / np.linalg.norm((pos - self.center) / self.radii)
+        )
+
+    def plot(self, ax: Axes):
+        ellipse = patches.Ellipse(
+            self.center,
+            2 * self.radii[0],
+            2 * self.radii[1],
+            color="green",
+            fill=False,
+            linewidth=2,
+        )
         ax.add_artist(ellipse)
