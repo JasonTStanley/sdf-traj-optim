@@ -2,14 +2,18 @@ import matplotlib
 import numpy as np
 from attrs import define, field
 from matplotlib.axes import Axes
-
+from matplotlib import patches
 from obstacles import *
 from sdf import SDF, Boundary, Environment
+from matplotlib.lines import Line2D
 
 from environments.basic import BasicEnv
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from bubble_cover.rrt import get_rapidly_exploring
+from bubble_cover.circles import Circle
+
+
 if __name__ == "__main__":
     # Define obstacles
     env = BasicEnv()
@@ -21,8 +25,8 @@ if __name__ == "__main__":
 
     # Parameters
     num_test_positions = 100
-    epsilon = 0.05  # ALL: clearance distance
-    minimum_radius = 0.05  # ALL: minimum radius
+    epsilon = 0.1     # ALL: clearance distance
+    minimum_radius = 0.1  # ALL: minimum radius
     terminate_early = True  # EBT/RBT: early termination if end_point
     overlap_factor = 0.5  # EBT: overlap factor
     max_retry = 100  # RBT: max retry for rejection samping
@@ -35,7 +39,7 @@ if __name__ == "__main__":
     rng = np.random.default_rng(seed=3)
     jumpstart = None
     overlaps_graph, max_circles, _ = get_rapidly_exploring(
-        sdf,
+        sdf.multi_query,
         epsilon,
         minimum_radius,
         num_test_positions,
@@ -50,5 +54,21 @@ if __name__ == "__main__":
         bubble_jumpstart=jumpstart
     )
 
+    for circle in max_circles:
+        sdf.plot_sample(ax, circle.centre)
+    ax.plot(start_position[0], start_position[1], 'gv')
+    ax.plot(end_position[0], end_position[1], 'g^')
+
+
+    # add this block after plotting the circles/start/end (before plt.show())
+    legend_handles = [
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=8, label='Optimistic'),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='orange', markersize=8, label='Pessimistic'),
+        patches.Patch(color='red', label='Obstacle'),
+        Line2D([0, 1], [0, 0], color='black', lw=2, marker='>', markevery=[1], markersize=8, label='neg. Gradient'),
+
+    ]
+
+    ax.legend(handles=legend_handles, loc='upper right')
 
     plt.show()

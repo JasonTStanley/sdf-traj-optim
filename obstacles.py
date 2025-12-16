@@ -24,11 +24,11 @@ class Obstacle(ABC):
         pass
 
     @abstractmethod
-    def plot(self, ax: Axes):
+    def plot(self, ax: Axes, color="red", fill_opacity=-1):
         """Visualize to a matplotlib plot"""
         pass
     @abstractmethod
-    def set_observed(self):
+    def set_observed(self, obs: bool):
         """Set if the SDF should see this obstacle"""
         pass
     @abstractmethod
@@ -54,9 +54,10 @@ class Circle(Obstacle):
             return np.zeros_like(direction)
         return direction / norm
 
-    def plot(self, ax: Axes):
+    def plot(self, ax: Axes, color="red", fill_opacity=-1):
+        alpha = fill_opacity if fill_opacity > 0 else 1
         circle = patches.Circle(
-            self.center, self.radius, color="red", fill=False, linewidth=2
+            self.center, self.radius, color=color, fill=fill_opacity >= 0, linewidth=2, alpha=alpha
         )
         ax.add_artist(circle)
 
@@ -88,11 +89,12 @@ class Rectangle(Obstacle):
         deriv *= sign
         return deriv
 
-    def plot(self, ax: Axes):
+    def plot(self, ax: Axes, color="red", fill_opacity=-1):
+        alpha = fill_opacity if fill_opacity > 0 else 1
         lower_left = self.center - self.half_extents
         width, height = 2 * self.half_extents
         rect = patches.Rectangle(
-            lower_left, width, height, color="red", fill=False, linewidth=2
+            lower_left, width, height, color=color, fill=fill_opacity >= 0, linewidth=2, alpha=alpha
         )
         ax.add_artist(rect)
 
@@ -122,14 +124,13 @@ class Oval(Obstacle):
             / np.linalg.norm((pos - self.center) / self.radii)
         )
 
-    def plot(self, ax: Axes):
+    def plot(self, ax: Axes, color="red", fill_opacity=0):
+        alpha = fill_opacity if fill_opacity > 0 else 1
         ellipse = patches.Ellipse(
             self.center,
             2 * self.radii[0],
             2 * self.radii[1],
-            color="green",
-            fill=False,
-            linewidth=2,
+            color=color, fill=fill_opacity >= 0, linewidth=2, alpha=alpha
         )
         ax.add_artist(ellipse)
 
