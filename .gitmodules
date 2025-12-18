@@ -1,0 +1,3 @@
+[submodule "erl_gcopter"]
+	path = erl_gcopter
+	url = git@github.com:ExistentialRobotics/erl_gcopter
