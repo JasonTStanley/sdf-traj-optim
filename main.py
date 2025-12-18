@@ -15,7 +15,10 @@ import sys
 import matplotlib.pyplot as plt
 
 from bubble_cover.circles import Circle
+from bubble_cover.discrete import epath_to_vpath, get_shortest_path
+from bubble_cover.overlap import position_to_max_circle_idx
 from bubble_cover.rrt import get_rapidly_exploring
+from bubble_cover.tracing import trace_toward_graph_all
 from erl_gcopter import pyminco
 
 if __name__ == "__main__":
@@ -57,8 +60,77 @@ if __name__ == "__main__":
         bubble_jumpstart=jumpstart,
     )
 
+    start_idx = position_to_max_circle_idx(overlaps_graph, start_position)
+
+    if start_idx < 0:
+        print("repairing graph for start")
+        overlaps_graph, start_idx = trace_toward_graph_all(
+            overlaps_graph, sdf, epsilon, minimum_radius, start_position
+        )
+
+    end_idx = position_to_max_circle_idx(overlaps_graph, end_position)
+    if end_idx < 0:
+        print("repairing graph for end")
+        overlaps_graph, end_idx = trace_toward_graph_all(
+            overlaps_graph, sdf, epsilon, minimum_radius, end_position
+        )
+
+    overlaps_graph.to_directed()
+    # plan shortest path on the graph
+    epath_centre_distance = get_shortest_path(
+        lambda from_circle, to_circle: from_circle.hausdorff_distance_to(to_circle),
+        overlaps_graph,
+        start_idx,
+        end_idx,
+        cost_name="hausdorff_distance",
+        return_epath=True,
+    )
+
     for circle in max_circles:
         sdf.plot_sample(ax, circle.centre)
+
+    if epath_centre_distance[0]:
+        vpath_centre_distance = epath_to_vpath(overlaps_graph, epath_centre_distance[0])
+    else:
+        vpath_centre_distance = []
+
+    chosen_path_circles = []
+    for idx, circle in enumerate(max_circles):
+        if idx in vpath_centre_distance:
+            chosen_path_circles.append(circle)
+
+    # convert circles to pyminco circles:
+    minco_bubbles = []
+    for circle in chosen_path_circles:
+        minco_bubbles.append(pyminco.Bubble2D(circle.centre, circle.radius))
+
+    cfg = pyminco.Config()
+    trajectory: pyminco.Trajectory = pyminco.solveTrajectory2D(
+        start_position, end_position, minco_bubbles, cfg
+    )
+    print(trajectory)
+
+    traj_duration = trajectory.getTotalDuration()
+    traj_positions = np.array(
+        [trajectory.getPos(t) for t in np.linspace(0, traj_duration, num=1000)]
+    )
+    print(traj_positions.shape)
+    print(traj_positions)
+    ax.plot(traj_positions[:, 0], traj_positions[:, 1], "k-", linewidth=2, zorder=3)
+
+    for circle in chosen_path_circles:
+        ax.add_artist(
+            patches.Circle(
+                circle.centre,
+                circle.radius,
+                color="cyan",
+                zorder=2,
+                fill=True,
+                alpha=0.5,
+                linewidth=2,
+            )
+        )
+
     ax.plot(start_position[0], start_position[1], "gv")
     ax.plot(end_position[0], end_position[1], "g^")
 
@@ -94,7 +166,6 @@ if __name__ == "__main__":
             label="neg. Gradient",
         ),
     ]
-
     ax.legend(handles=legend_handles, loc="upper right")
 
     plt.show()
