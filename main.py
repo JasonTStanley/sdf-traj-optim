@@ -86,8 +86,8 @@ if __name__ == "__main__":
         return_epath=True,
     )
 
-    for circle in max_circles:
-        sdf.plot_sample(ax, circle.centre)
+    # for circle in max_circles:
+    #    sdf.plot_sample(ax, circle.centre)
 
     if epath_centre_distance[0]:
         vpath_centre_distance = epath_to_vpath(overlaps_graph, epath_centre_distance[0])
@@ -95,9 +95,8 @@ if __name__ == "__main__":
         vpath_centre_distance = []
 
     chosen_path_circles = []
-    for idx, circle in enumerate(max_circles):
-        if idx in vpath_centre_distance:
-            chosen_path_circles.append(circle)
+    for idx in vpath_centre_distance:
+        chosen_path_circles.append(max_circles[idx])
 
     # convert circles to pyminco circles:
     minco_bubbles = []
@@ -105,9 +104,20 @@ if __name__ == "__main__":
         minco_bubbles.append(pyminco.Bubble2D(circle.centre, circle.radius))
 
     cfg = pyminco.Config()
-    trajectory: pyminco.Trajectory = pyminco.solveTrajectory2D(
+
+    # print("calculating short path:")
+    # short_path = pyminco.shortestPath2D(
+    #    start_position, end_position, minco_bubbles, cfg
+    # )
+    # ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
+
+    trajectory: pyminco.Trajectory | None = pyminco.solveTrajectory2D(
         start_position, end_position, minco_bubbles, cfg
     )
+    if trajectory is None:
+        print("No trajectory found")
+        sys.exit(1)
+
     print(trajectory)
 
     traj_duration = trajectory.getTotalDuration()
@@ -116,6 +126,8 @@ if __name__ == "__main__":
     )
     print(traj_positions.shape)
     print(traj_positions)
+    waypoints = trajectory.getPositions()
+    ax.scatter(waypoints[0, :], waypoints[1, :], c="orange", zorder=4)
     ax.plot(traj_positions[:, 0], traj_positions[:, 1], "k-", linewidth=2, zorder=3)
 
     for circle in chosen_path_circles:
