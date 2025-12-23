@@ -33,7 +33,7 @@ if __name__ == "__main__":
     num_test_positions = 100
     epsilon = 0.1  # ALL: clearance distance
     minimum_radius = 0.1  # ALL: minimum radius
-    terminate_early = True  # EBT/RBT: early termination if end_point
+    terminate_early = False  # EBT/RBT: early termination if end_point
     overlap_factor = 0.5  # EBT: overlap factor
     max_retry = 100  # RBT: max retry for rejection samping
     max_retry_epsilon = 1000  # RBT: max retry for min radius check
@@ -103,7 +103,10 @@ if __name__ == "__main__":
     for circle in chosen_path_circles:
         minco_bubbles.append(pyminco.Bubble2D(circle.centre, circle.radius))
 
+    print(f"num_bubbles in path: { len(minco_bubbles)}")
+
     cfg = pyminco.Config()
+    cfg.boundary_lambda = 1e-2
 
     # print("calculating short path:")
     # short_path = pyminco.shortestPath2D(
