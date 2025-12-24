@@ -11,7 +11,7 @@ from sdf import SDF, Boundary, Environment
 
 matplotlib.use("TkAgg")
 import sys
-
+import time
 import matplotlib.pyplot as plt
 
 from bubble_cover.circles import Circle
@@ -108,20 +108,20 @@ if __name__ == "__main__":
     cfg = pyminco.Config()
     print(cfg)
 
-    print("calculating short path:")
-    short_path = pyminco.shortestPath2D(
-       start_position, end_position, minco_bubbles, cfg
-    )
-    ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
-
+    #print("calculating short path:")
+    #short_path = pyminco.shortestPath2D(
+    #   start_position, end_position, minco_bubbles, cfg
+    #)
+    #ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
+    start = time.time()
     trajectory: pyminco.Trajectory | None = pyminco.solveTrajectory2D(
         start_position, end_position, minco_bubbles, cfg
     )
+    print(f"calculated traj in: {time.time() - start} sec")
     if trajectory is None:
         print("No trajectory found")
         plt.show()
         sys.exit()
-
 
     print(trajectory)
 
