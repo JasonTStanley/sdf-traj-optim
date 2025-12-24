@@ -106,20 +106,22 @@ if __name__ == "__main__":
     print(f"num_bubbles in path: { len(minco_bubbles)}")
 
     cfg = pyminco.Config()
-    cfg.boundary_lambda = 1e-2
+    print(cfg)
 
-    # print("calculating short path:")
-    # short_path = pyminco.shortestPath2D(
-    #    start_position, end_position, minco_bubbles, cfg
-    # )
-    # ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
+    print("calculating short path:")
+    short_path = pyminco.shortestPath2D(
+       start_position, end_position, minco_bubbles, cfg
+    )
+    ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
 
     trajectory: pyminco.Trajectory | None = pyminco.solveTrajectory2D(
         start_position, end_position, minco_bubbles, cfg
     )
     if trajectory is None:
         print("No trajectory found")
-        sys.exit(1)
+        plt.show()
+        sys.exit()
+
 
     print(trajectory)
 
