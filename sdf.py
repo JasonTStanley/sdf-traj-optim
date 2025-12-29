@@ -1,12 +1,10 @@
-from typing import Optional
-
-import matplotlib.patches as patches
-import matplotlib.pyplot as plt
-import numpy as np
-from attrs import define, field
-from matplotlib.axes import Axes
-
 from obstacles import *
+
+
+@define
+class Bubble:
+    pos: np.ndarray
+    radius: float
 
 
 @define
@@ -36,6 +34,7 @@ class Boundary:
 
     def maxs(self):
         return np.array([self.x_max, self.y_max])
+
     # def generate_grid(self, grid_size: tuple[int, int]) -> np.ndarray:
     #     """
     #     Generate a grid of points within the specified bounds.
@@ -60,46 +59,45 @@ class Boundary:
     #     self.sdf_grid = self.sdf_grid.reshape(grid_size)
     #     return self.sdf_grid
 
-
-        # if view_sdf_grid:
-        #     assert self.sdf_grid is not None, "SDF grid has not been computed yet."
-        #     pos_mask = self.sdf_grid >= 0
-        #     neg_mask = self.sdf_grid < 0
-        #
-        #     # Create masked arrays
-        #     pos_grid = np.ma.masked_where(
-        #         ~pos_mask, self.sdf_grid
-        #     )  # only positive values
-        #     neg_grid = np.ma.masked_where(
-        #         ~neg_mask, self.sdf_grid
-        #     )  # only negative values
-        #
-        #     # Plot positive SDF
-        #     im_pos = ax.imshow(
-        #         pos_grid,
-        #         extent=self.bounds.as_tuple(),
-        #         origin="lower",
-        #         cmap="viridis",
-        #         alpha=1.0,
-        #     )
-        #
-        #     # Plot negative SDF
-        #     im_neg = ax.imshow(
-        #         neg_grid,
-        #         extent=self.bounds.as_tuple(),
-        #         origin="lower",
-        #         cmap="coolwarm",
-        #         alpha=1.0,
-        #     )
-        #
-        #     ax.set_title("Environment Visualization with SDF")
-        #
-        #     # Create two colorbars
-        #     cbar_pos = plt.colorbar(im_pos, ax=ax, fraction=0.046, pad=0.184)
-        #     cbar_pos.set_label("Positive SDF")
-        #
-        #     cbar_neg = plt.colorbar(im_neg, ax=ax, fraction=0.046, pad=0.08)
-        #     cbar_neg.set_label("Negative SDF")
+    # if view_sdf_grid:
+    #     assert self.sdf_grid is not None, "SDF grid has not been computed yet."
+    #     pos_mask = self.sdf_grid >= 0
+    #     neg_mask = self.sdf_grid < 0
+    #
+    #     # Create masked arrays
+    #     pos_grid = np.ma.masked_where(
+    #         ~pos_mask, self.sdf_grid
+    #     )  # only positive values
+    #     neg_grid = np.ma.masked_where(
+    #         ~neg_mask, self.sdf_grid
+    #     )  # only negative values
+    #
+    #     # Plot positive SDF
+    #     im_pos = ax.imshow(
+    #         pos_grid,
+    #         extent=self.bounds.as_tuple(),
+    #         origin="lower",
+    #         cmap="viridis",
+    #         alpha=1.0,
+    #     )
+    #
+    #     # Plot negative SDF
+    #     im_neg = ax.imshow(
+    #         neg_grid,
+    #         extent=self.bounds.as_tuple(),
+    #         origin="lower",
+    #         cmap="coolwarm",
+    #         alpha=1.0,
+    #     )
+    #
+    #     ax.set_title("Environment Visualization with SDF")
+    #
+    #     # Create two colorbars
+    #     cbar_pos = plt.colorbar(im_pos, ax=ax, fraction=0.046, pad=0.184)
+    #     cbar_pos.set_label("Positive SDF")
+    #
+    #     cbar_neg = plt.colorbar(im_neg, ax=ax, fraction=0.046, pad=0.08)
+    #     cbar_neg.set_label("Negative SDF")
 
 
 @define
@@ -114,7 +112,7 @@ class Environment:
 
     def plot_unobserved(self, ax: Axes):
         for reg in self.unknown_regions:
-            reg.plot(ax, color='gray', fill_opacity=0.5)
+            reg.plot(ax, color="gray", fill_opacity=0.5)
 
     def plot(self, ax: Axes):
         ax.set_title("Environment Visualization")
@@ -124,6 +122,7 @@ class Environment:
         ax.set_ylim(self.bounds.y_min, self.bounds.y_max)
         self.plot_obstacles(ax)
         self.plot_unobserved(ax)
+
 
 @define
 class SDF:
@@ -151,7 +150,9 @@ class SDF:
             vals[i] = self.query(point, optimistic=optimistic)
         return vals
 
-    def query_with_deriv(self, pos: np.ndarray, optimistic=True) -> tuple[float, np.ndarray]:
+    def query_with_deriv(
+        self, pos: np.ndarray, optimistic=True
+    ) -> tuple[float, np.ndarray]:
         val = np.inf
         closest_obs = None
         for obs in self.env.obstacles:
@@ -174,7 +175,9 @@ class SDF:
     def plot_sample(self, ax: Axes, sample: np.ndarray):
         # pessimistic
         p_sdf_val, p_deriv = self.query_with_deriv(sample, optimistic=False)
-        pess_circ = patches.Circle(sample, p_sdf_val, color="Orange", fill=False, linewidth=1)
+        pess_circ = patches.Circle(
+            sample, p_sdf_val, color="Orange", fill=False, linewidth=1
+        )
         ax.add_patch(pess_circ)
         p_vec = -p_sdf_val * p_deriv
         ax.quiver(

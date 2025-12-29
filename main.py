@@ -1,20 +1,17 @@
 import matplotlib
 import numpy as np
-from attrs import define, field
-from matplotlib import patches
-from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 
 from environments.basic import BasicEnv
-from obstacles import *
-from sdf import SDF, Boundary, Environment
+from sdf import SDF
 
 matplotlib.use("TkAgg")
 import sys
 import time
 import matplotlib.pyplot as plt
 
-from bubble_cover.circles import Circle
+import matplotlib.patches as patches
+
 from bubble_cover.discrete import epath_to_vpath, get_shortest_path
 from bubble_cover.overlap import position_to_max_circle_idx
 from bubble_cover.rrt import get_rapidly_exploring
@@ -31,21 +28,24 @@ if __name__ == "__main__":
 
     # Parameters
     num_test_positions = 100
-    epsilon = 0.1  # ALL: clearance distance
+    epsilon = 0.01  # ALL: clearance distance
     minimum_radius = 0.1  # ALL: minimum radius
-    terminate_early = False  # EBT/RBT: early termination if end_point
+    terminate_early = False # EBT/RBT: early termination if end_point
     overlap_factor = 0.5  # EBT: overlap factor
     max_retry = 100  # RBT: max retry for rejection samping
     max_retry_epsilon = 1000  # RBT: max retry for min radius check
     inflate_factor = 1.0  # RBT: inflate factor for bounds
 
     start_position = np.array([-2.0, 2.0])
-    end_position = np.array([2.1, -2.1])
+    end_position = np.array([-1, -3.0])
 
     rng = np.random.default_rng(seed=3)
     jumpstart = None
+    pessimistic_sdf = lambda points: sdf.multi_query(points, optimistic=False)
+    optimistic_sdf = lambda points: sdf.multi_query(points, optimistic=True)
+
     overlaps_graph, max_circles, _ = get_rapidly_exploring(
-        sdf.multi_query,
+        pessimistic_sdf,
         epsilon,
         minimum_radius,
         num_test_positions,
@@ -106,13 +106,14 @@ if __name__ == "__main__":
     print(f"num_bubbles in path: { len(minco_bubbles)}")
 
     cfg = pyminco.Config()
+    cfg.pointsPerBubble = 0
     print(cfg)
 
-    #print("calculating short path:")
-    #short_path = pyminco.shortestPath2D(
-    #   start_position, end_position, minco_bubbles, cfg
-    #)
-    #ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
+    print("calculating short path:")
+    short_path = pyminco.shortestPath2D(
+        start_position, end_position, minco_bubbles, cfg
+    )
+    ax.scatter(short_path[0, :], short_path[1, :], c="red", zorder=5)
     start = time.time()
     trajectory: pyminco.Trajectory | None = pyminco.solveTrajectory2D(
         start_position, end_position, minco_bubbles, cfg
